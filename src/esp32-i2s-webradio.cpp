@@ -711,6 +711,8 @@ void handleIrCode(String irCode) {
 //**************************************************************************************************
 void setup() {
 
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+
     Serial.begin(115200);
  
     preferences.begin("WebRadio", false);  // instance of preferences for defaults (station, volume ...)
