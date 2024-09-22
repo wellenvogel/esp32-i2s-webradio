@@ -45,15 +45,9 @@ WebServer server(80);
 HTTPUpdateServer httpUpdater;
 
 // I2S pins for DAC
-#if PLATFORMIO_BOARD == esp32cam
-#define I2S_DOUT      2
-#define I2S_BCLK      14
-#define I2S_LRC       15
-#else
-#define I2S_DOUT      25
-#define I2S_BCLK      27
-#define I2S_LRC       26
-#endif
+#define I2S_DOUT      26
+#define I2S_BCLK      25
+#define I2S_LRC       27
 
 // IR pin
 #ifdef CONFIG_IDF_TARGET_ESP32C3
