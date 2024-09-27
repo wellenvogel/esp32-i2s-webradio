@@ -81,6 +81,8 @@ String last_ir_command;
 
 String device_name = F("WebRadio");
 
+unsigned long stationStarted=0;
+
 bool playing_a_station = false; // True if we are playing a station, false if we are playing a URL, needed for caching station URLs
 
 bool use_deep_sleep = false;
@@ -445,7 +447,7 @@ void play_station(){
     }
     println("Speech finished");
     playing_a_station = true;
-
+    stationStarted=millis();
     String url = stations[cur_station];
     // If URL does not start with http, then search for a podcast
     if (!url.startsWith("http")) {
@@ -711,7 +713,7 @@ void handleIrCode(String irCode) {
 //**************************************************************************************************
 void setup() {
 
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+    //WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
     Serial.begin(115200);
  
@@ -789,7 +791,7 @@ void setup() {
         println(F("PSRAM not detected"));
         // Increase the buffer size of the built-in RAM buffer; this seem to help against stuttering
         println(F("Increasing buffer size"));
-        audio.setBufsize(15000, 0);
+        audio.setBufsize(freeInternal/5, 0);
     }
 
     if (cur_station >= max_stations) {
@@ -825,6 +827,15 @@ void setup() {
 //**************************************************************************************************
 void loop()
 {
+    if (stationStarted >0){
+        unsigned long now=millis();
+        if (now < stationStarted) stationStarted=now;
+        if ((stationStarted + 50000l) < now){
+            println(String(stationStarted)+String(" ")+String(now)+String(" station not found, restart"));
+            delay(5000);
+            esp_restart();
+        }
+    }
     audio.loop();
 
     // listen for web requests
@@ -853,8 +864,13 @@ void loop()
 //**************************************************************************************************
 //                                           E V E N T S                                           *
 //**************************************************************************************************
+const char * SW="syncword";
 void audio_info(const char *info){
-    print(F("audio_info: ")); println(info);
+    if ((stationStarted > 0) && (strncmp(info,SW,strlen(SW)) == 0)){
+        println("Station sync detected");
+        stationStarted=0;
+    }
+    print(F("audio_info: ")); print(String(stationStarted)+String(" ")); println(info);
 }
 void audio_showstation(const char *info){
     write_stationName(String(info));
